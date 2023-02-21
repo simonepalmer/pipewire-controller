@@ -86,7 +86,7 @@ class ControlWindow:
         self.window.set_title("Pipewire Controller")
 
         self.label_buffer_settings = self.builder.get_object("label_buffer_settings")
-        self.label_buffer_settings.set_text(f"Sample size: {self.control.get_current_settings()[0]} samples")
+        self.label_buffer_settings.set_text(f"Buffer size: {self.control.get_current_settings()[0]} samples")
         self.label_sample_settings = self.builder.get_object("label_sample_settings")
         self.label_sample_settings.set_text(f"Sample rate: {self.control.get_current_settings()[1]} kHz")
 
@@ -102,6 +102,12 @@ class ControlWindow:
         self.control.apply_settings()
     
     """Buffer size radio buttons"""
+
+    def on_radio16_toggled(self, toggled):
+        self.control.buffer = 16
+
+    def on_radio32_toggled(self, toggled):
+        self.control.buffer = 32
 
     def on_radio64_toggled(self, toggled):
         self.control.buffer = 64
@@ -119,6 +125,12 @@ class ControlWindow:
         self.control.buffer = 1024
 
     """Samaple rate radio buttons"""
+
+    def on_radio96_toggled(self, toggled):
+        self.control.samples = 96000
+
+    def on_radio88_toggled(self, toggled):
+        self.control.samples = 88200
 
     def on_radio48_toggled(self, toggled):
         self.control.samples = 48000
