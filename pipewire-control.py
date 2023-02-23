@@ -19,13 +19,16 @@ class Control:
     def apply_settings(self):
         if os.popen('which pipewire').read() == '/usr/bin/pipewire\n':
             try:
+                # Starting or stopping pipewire based on radio buttons
                 os.system(f'systemctl --user {self.status_command} pipewire.socket')
                 os.system(f'systemctl --user {self.status_command} pipewire.service')
 
+                # Forcing buffer size and sample rate to selected values
                 os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
                 os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
 
-                self.set_current_settings()
+                # Set the labels to the settings that where just applied
+                self.get_current_settings()
 
             except Exception as error:
                 message = "Pipewire is installed but selected settings can't be applied"
@@ -34,23 +37,25 @@ class Control:
             message = "Pipewire can't be found, use the command: 'which pipewire' to see if it is installed"
             self.control_window.on_error(message, "If not, install Pipewire and try again")
 
+    """Check the current status and settings of pipewire and set the labels accordingly"""
+
     def get_current_settings(self):
-        # Check if pipewire is online
-        if self.get_pipewire_state() == False:
+        if not os.popen('pw-metadata -n settings').read() == '':
             status = 'Active (Running)'
             current_settings = os.popen('pw-metadata -n settings').read()
             settings_list = current_settings.split("'")
 
+            # Check forced settings
             buffer_i = settings_list.index('clock.force-quantum')
             buffer = f"{settings_list[buffer_i+2]} samples"
             samples_i = settings_list.index('clock.force-rate')
             samples = f"{settings_list[samples_i+2]} kHz"
 
-            # If no clock is forced, give default settings
-            if buffer == '0':
+            # If no settings are forced, give default settings
+            if buffer == '0 samples':
                 buffer_i = settings_list.index('clock.quantum')
                 buffer = f"{settings_list[buffer_i+2]} samples"
-            if samples == '0':
+            if samples == '0 kHz':
                 samples_i = settings_list.index('clock.rate')
                 samples = f"{settings_list[samples_i+2]} kHz"
         else:
@@ -58,23 +63,9 @@ class Control:
             buffer = 'Not active'
             samples = 'Not active'
 
-        return status, buffer, samples
-
-    def set_current_settings(self):
-        self.control_window.label_status_settings.set_text(f"Status: {self.get_current_settings()[0]}")
-        self.control_window.label_buffer_settings.set_text(f"Buffer size: {str(self.get_current_settings()[1])}")
-        self.control_window.label_sample_settings.set_text(f"Sample rate: {str(self.get_current_settings()[2])}")
-
-    def get_pipewire_state(self):
-        pipewire_state = os.popen('pw-metadata -n settings').read()
-        return pipewire_state == ''
-
-    def get_pipewire_status(self):
-        if self.get_pipewire_state() == '':
-            status_command = "start"
-        else:
-            status_command = "stop"
-        return status_command
+        self.control_window.label_status_settings.set_text(f"Status: {status}")
+        self.control_window.label_buffer_settings.set_text(f"Buffer size: {buffer}")
+        self.control_window.label_sample_settings.set_text(f"Sample rate: {samples}")
 
 
 class ControlWindow:
@@ -108,7 +99,7 @@ class ControlWindow:
         self.label_buffer_settings = self.builder.get_object("label_buffer_settings")
         self.label_sample_settings = self.builder.get_object("label_sample_settings")
 
-        self.control.set_current_settings()
+        self.control.get_current_settings()
 
         self.window.show_all()
         self.window.connect("destroy", Gtk.main_quit)

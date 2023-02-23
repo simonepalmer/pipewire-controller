@@ -549,7 +549,7 @@
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="radioon">
-                    <property name="label" translatable="yes">Active</property>
+                    <property name="label" translatable="yes">Activate</property>
                     <property name="width-request">95</property>
                     <property name="height-request">25</property>
                     <property name="visible">True</property>
@@ -566,7 +566,7 @@
                 </child>
                 <child>
                   <object class="GtkRadioButton" id="radiooff">
-                    <property name="label" translatable="yes">Suspended</property>
+                    <property name="label" translatable="yes">Suspend</property>
                     <property name="width-request">95</property>
                     <property name="height-request">25</property>
                     <property name="visible">True</property>
