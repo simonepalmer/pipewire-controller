@@ -53,15 +53,10 @@ class Control:
             if samples == '0':
                 samples_i = settings_list.index('clock.rate')
                 samples = f"{settings_list[samples_i+2]} kHz"
-
         else:
             status = 'Suspended'
             buffer = 'Not active'
             samples = 'Not active'
-
-        print(status)
-        print(buffer)
-        print(samples)
 
         return status, buffer, samples
 
