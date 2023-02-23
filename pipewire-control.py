@@ -1,5 +1,6 @@
 import gi
 import os
+import time
 
 gi.require_version("Gtk", "3.0") 
 from gi.repository import Gtk
@@ -7,25 +8,24 @@ from gi.repository import Gtk
 class Control:
     """Control class for business logic."""
     
-    def __init__(self, buffer=64, samples=48000):
+    def __init__(self, buffer=64, samples=48000, status_command='start'):
         self.buffer = buffer
         self.samples = samples
+        self.status_command = status_command
         self.control_window = None
 
-    """If Pipewire is installed then apply settings, else show error"""
+    """If Pipewire is installed, apply settings, else show error"""
 
     def apply_settings(self):
         if os.popen('which pipewire').read() == '/usr/bin/pipewire\n':
             try:
-                os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
-                self.control_window.label_buffer_settings.set_text(f"Sample size: {str(self.buffer)} samples")
-                os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
-                self.control_window.label_sample_settings.set_text(f"Sample rate: {str(self.samples)} kHz")
+                os.system(f'systemctl --user {self.status_command} pipewire.socket')
+                os.system(f'systemctl --user {self.status_command} pipewire.service')
 
-                # I though about using the 'get_current_settings()' method to set the number here aswell
-                # but since the button methods already sets the buffer and samples to intergers for the 
-                # command to set the settings it seems stupid to not just use the same variables for the
-                # label too
+                os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
+                os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
+
+                self.set_current_settings()
 
             except Exception as error:
                 message = "Pipewire is installed but selected settings can't be applied"
@@ -34,43 +34,53 @@ class Control:
             message = "Pipewire can't be found, use the command: 'which pipewire' to see if it is installed"
             self.control_window.on_error(message, "If not, install Pipewire and try again")
 
-    """Gettings current settings to show in main window"""
-
     def get_current_settings(self):
-        current_settings = os.popen('pw-metadata -n settings').read()
-        settings_list = current_settings.split("'")
+        # Check if pipewire is online
+        if self.get_pipewire_state() == False:
+            status = 'Active (Running)'
+            current_settings = os.popen('pw-metadata -n settings').read()
+            settings_list = current_settings.split("'")
 
-        buffer_i = settings_list.index('clock.force-quantum')
-        buffer = settings_list[buffer_i+2]
-        samples_i = settings_list.index('clock.force-rate')
-        samples = settings_list[samples_i+2]
+            buffer_i = settings_list.index('clock.force-quantum')
+            buffer = f"{settings_list[buffer_i+2]} samples"
+            samples_i = settings_list.index('clock.force-rate')
+            samples = f"{settings_list[samples_i+2]} kHz"
 
-        if buffer == '0':
-            buffer_i = settings_list.index('clock.quantum')
-            buffer = settings_list[buffer_i+2]
-        if samples == '0':
-            samples_i = settings_list.index('clock.rate')
-            samples = settings_list[samples_i+2]
+            # If no clock is forced, give default settings
+            if buffer == '0':
+                buffer_i = settings_list.index('clock.quantum')
+                buffer = f"{settings_list[buffer_i+2]} samples"
+            if samples == '0':
+                samples_i = settings_list.index('clock.rate')
+                samples = f"{settings_list[samples_i+2]} kHz"
 
-        return buffer, samples
+        else:
+            status = 'Suspended'
+            buffer = 'Not active'
+            samples = 'Not active'
 
-        # I found 2 problems in the previous version of this method.
+        print(status)
+        print(buffer)
+        print(samples)
 
-        # 1st: If pipewire changes the order of their settings or in other ways change the format
-        # of the output the settings_list[-4] could be something completely different, however, this
-        # new way should be safer to not break since it's looking for the name of the settings it
-        # wants the value for and then taking that index + 2 (+1 would be 'value:') 
-        # Full line reads -: update: id:0 key:'clock.rate' value:'48000' type:'' :- so split at "'"
-        # seems the best way to get the number by itself.
-        #
-        # I guess that if I would want to do it even more safe I could split at ":" and find the 
-        # index after the matched index, then take that string and loop though it to remove every
-        # character that is not a digit. So, safer but it I think it's a little bit convoluted
-        # so I don't know if I like the trade off
+        return status, buffer, samples
 
-        # 2nd: Pipewire has a "default" and a 'forced' settings of these values. To make it always
-        # show the correct current setting it needs to check if the forced value is '0', which it 
-        # will be after a reboot, and then take the default value when opening the program instead.
+    def set_current_settings(self):
+        self.control_window.label_status_settings.set_text(f"Status: {self.get_current_settings()[0]}")
+        self.control_window.label_buffer_settings.set_text(f"Buffer size: {str(self.get_current_settings()[1])}")
+        self.control_window.label_sample_settings.set_text(f"Sample rate: {str(self.get_current_settings()[2])}")
+
+    def get_pipewire_state(self):
+        pipewire_state = os.popen('pw-metadata -n settings').read()
+        return pipewire_state == ''
+
+    def get_pipewire_status(self):
+        if self.get_pipewire_state() == '':
+            status_command = "start"
+        else:
+            status_command = "stop"
+        return status_command
+
 
 class ControlWindow:
     """ControlWindow class for GUI logic."""
@@ -85,10 +95,25 @@ class ControlWindow:
         self.window = self.builder.get_object("window")
         self.window.set_title("Pipewire Controller")
 
+        # Define radio buttons so they can be set not sensitive
+        self.radio16 = self.builder.get_object('radio16')
+        self.radio32 = self.builder.get_object('radio32')
+        self.radio64 = self.builder.get_object('radio64')
+        self.radio128 = self.builder.get_object('radio128')
+        self.radio256 = self.builder.get_object('radio256')
+        self.radio512 = self.builder.get_object('radio512')
+        self.radio1024 = self.builder.get_object('radio1024')
+        self.radio44 = self.builder.get_object('radio44')
+        self.radio48 = self.builder.get_object('radio48')
+        self.radio88 = self.builder.get_object('radio88')
+        self.radio96 = self.builder.get_object('radio96')
+
+        # Define and set labels so they can show the settings
+        self.label_status_settings = self.builder.get_object("label_status_settings")
         self.label_buffer_settings = self.builder.get_object("label_buffer_settings")
-        self.label_buffer_settings.set_text(f"Buffer size: {self.control.get_current_settings()[0]} samples")
         self.label_sample_settings = self.builder.get_object("label_sample_settings")
-        self.label_sample_settings.set_text(f"Sample rate: {self.control.get_current_settings()[1]} kHz")
+
+        self.control.set_current_settings()
 
         self.window.show_all()
         self.window.connect("destroy", Gtk.main_quit)
@@ -138,6 +163,36 @@ class ControlWindow:
     def on_radio44_toggled(self, toggled):
         self.control.samples = 44100
 
+    """Pipewire status radio buttons"""
+
+    def on_radioon_toggled(self, toggled):
+        self.control.status_command = 'start'
+        self.radio16.set_sensitive(True)
+        self.radio32.set_sensitive(True)
+        self.radio64.set_sensitive(True)
+        self.radio128.set_sensitive(True)
+        self.radio256.set_sensitive(True)
+        self.radio512.set_sensitive(True)
+        self.radio1024.set_sensitive(True)
+        self.radio44.set_sensitive(True)
+        self.radio48.set_sensitive(True)
+        self.radio88.set_sensitive(True)
+        self.radio96.set_sensitive(True)
+
+    def on_radiooff_toggled(self, toggled):
+        self.control.status_command = 'stop'
+        self.radio16.set_sensitive(False)
+        self.radio32.set_sensitive(False)
+        self.radio64.set_sensitive(False)
+        self.radio128.set_sensitive(False)
+        self.radio256.set_sensitive(False)
+        self.radio512.set_sensitive(False)
+        self.radio1024.set_sensitive(False)
+        self.radio44.set_sensitive(False)
+        self.radio48.set_sensitive(False)
+        self.radio88.set_sensitive(False)
+        self.radio96.set_sensitive(False)
+
     """Showing error message"""
 
     def on_error(self, message, error):
@@ -151,18 +206,6 @@ class ControlWindow:
         label_hint.set_text(error)
 
         window_error.show_all()
-
-        # I'm not sure why every other method here need to use self.x
-        # to work but this one can't have it, I think I have a lacking
-        # understanding of how classes work which prevents me from 
-        # figuring this out. Any input or explaination would be very helpful 
-
-        # Also, I would very much like to have a button in this window
-        # aswell connected to on_close_clicked() to close the entire app,
-        # because there is not reason to keep it running if pipewire is
-        # not installed. However, I probably spent 2 hours last week trying
-        # to get a button to work without any progress, it was just doing
-        # nothing so I skipped it for now
 
 if __name__ == "__main__":
     control = Control()
