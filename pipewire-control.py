@@ -1,6 +1,5 @@
 import gi
 import os
-import time
 
 gi.require_version("Gtk", "3.0") 
 from gi.repository import Gtk
@@ -17,18 +16,23 @@ class Control:
     """If Pipewire is installed, apply settings, else show error"""
 
     def apply_settings(self):
+        # Check if pipewire is installed
         if os.popen('which pipewire').read() == '/usr/bin/pipewire\n':
             try:
-                # Starting or stopping pipewire based on radio buttons
-                os.system(f'systemctl --user {self.status_command} pipewire.socket')
-                os.system(f'systemctl --user {self.status_command} pipewire.service')
+                current_settings = self.get_current_settings()
+                
+                # Starting or stopping pipewire based on radio buttons and current status
+                if str(self.status_command) != current_settings[3]:
+                    os.system(f'systemctl --user {self.status_command} pipewire.socket')
+                    os.system(f'systemctl --user {self.status_command} pipewire.service')
 
-                # Forcing buffer size and sample rate to selected values
-                os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
-                os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
+                # Force buffer size and sample rate to selected values, if not already
+                if str(self.buffer) != str(current_settings[4]):
+                    os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
+                if str(self.samples) != str(current_settings[5]):
+                    os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
 
-                # Set the labels to the settings that where just applied
-                self.get_current_settings()
+                self.show_current_settings()
 
             except Exception as error:
                 message = "Pipewire is installed but selected settings can't be applied"
@@ -40,32 +44,45 @@ class Control:
     """Check the current status and settings of pipewire and set the labels accordingly"""
 
     def get_current_settings(self):
+        # Check if pipewire is active, will return '' if it's not
         if not os.popen('pw-metadata -n settings').read() == '':
-            status = 'Active (Running)'
+            status_str = 'Active (Running)'
+            status_word = 'start'
             current_settings = os.popen('pw-metadata -n settings').read()
             settings_list = current_settings.split("'")
 
             # Check forced settings
             buffer_i = settings_list.index('clock.force-quantum')
-            buffer = f"{settings_list[buffer_i+2]} samples"
+            buffer_str = f"{settings_list[buffer_i+2]} samples"
             samples_i = settings_list.index('clock.force-rate')
-            samples = f"{settings_list[samples_i+2]} kHz"
+            samples_str = f"{settings_list[samples_i+2]} kHz"
 
             # If no settings are forced, give default settings
-            if buffer == '0 samples':
+            if buffer_str == '0 samples':
                 buffer_i = settings_list.index('clock.quantum')
-                buffer = f"{settings_list[buffer_i+2]} samples"
-            if samples == '0 kHz':
+                buffer_str = f"{settings_list[buffer_i+2]} samples"
+            if samples_str == '0 kHz':
                 samples_i = settings_list.index('clock.rate')
-                samples = f"{settings_list[samples_i+2]} kHz"
-        else:
-            status = 'Suspended'
-            buffer = 'Not active'
-            samples = 'Not active'
+                samples_str = f"{settings_list[samples_i+2]} kHz"
 
-        self.control_window.label_status_settings.set_text(f"Status: {status}")
-        self.control_window.label_buffer_settings.set_text(f"Buffer size: {buffer}")
-        self.control_window.label_sample_settings.set_text(f"Sample rate: {samples}")
+            buffer_int = settings_list[buffer_i+2]
+            samples_int = settings_list[samples_i+2]
+
+        else:
+            status_str = 'Suspended'
+            buffer_str = 'Not active'
+            samples_str = 'Not active'
+            status_word = 'stop'
+            buffer_int = 'Not set'
+            samples_int = 'Not set'
+
+        return status_str, buffer_str, samples_str, status_word, buffer_int, samples_int
+
+    def show_current_settings(self):
+        current_settings = self.get_current_settings()
+        self.control_window.label_status_settings.set_text(f"Status: {current_settings[0]}")
+        self.control_window.label_buffer_settings.set_text(f"Buffer size: {current_settings[1]}")
+        self.control_window.label_sample_settings.set_text(f"Sample rate: {current_settings[2]}")
 
 
 class ControlWindow:
@@ -99,7 +116,7 @@ class ControlWindow:
         self.label_buffer_settings = self.builder.get_object("label_buffer_settings")
         self.label_sample_settings = self.builder.get_object("label_sample_settings")
 
-        self.control.get_current_settings()
+        self.control.show_current_settings()
 
         self.window.show_all()
         self.window.connect("destroy", Gtk.main_quit)
