@@ -322,6 +322,7 @@
                     <property name="height-request">25</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="tooltip-text" translatable="yes">Shows the current sample rate</property>
                     <property name="halign">start</property>
                     <property name="valign">start</property>
                     <property name="label" translatable="yes">sample</property>
@@ -337,6 +338,7 @@
                     <property name="height-request">25</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="tooltip-text" translatable="yes">Shows the current buffer size</property>
                     <property name="halign">start</property>
                     <property name="label" translatable="yes">buffer</property>
                   </object>
@@ -376,6 +378,7 @@
                     <property name="height-request">25</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="tooltip-text" translatable="yes">Shows the current state of pipewire</property>
                     <property name="halign">start</property>
                     <property name="label" translatable="yes">status</property>
                   </object>
@@ -555,6 +558,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">False</property>
+                    <property name="tooltip-text" translatable="yes">Activate: Set pipewire to running</property>
                     <property name="active">True</property>
                     <property name="draw-indicator">True</property>
                     <signal name="toggled" handler="on_radioon_toggled" swapped="no"/>
@@ -572,6 +576,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">False</property>
+                    <property name="tooltip-text" translatable="yes">Suspend: Suspend pipewire in favor of using ALSA for situations where pipewire won't grant use of ALSA to a certain program (For example Reaper DAW)</property>
                     <property name="active">True</property>
                     <property name="draw-indicator">True</property>
                     <property name="group">radioon</property>
