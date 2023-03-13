@@ -38,4 +38,4 @@ pacman -SdajHsfiJoewW798rnewhojkiofw! pipewire python3
 
 ## Final words
 
-Note that there are probably much better ways of solving the problems I tried to solve with this program and there might even be pre-existing solutions aswell but this was specifically made to work for me and my workflow and be a easy enough project to give a gateway into some programming.
+Note that there are probably much better ways of solving the problems I tried to solve with this program and there might even be pre-existing solutions aswell but this was specifically made to work for me and my workflow and to be a real world useful project for gettings into some programming
