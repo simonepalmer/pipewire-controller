@@ -4,9 +4,38 @@ A small GUI app made for use of Pipewire with Reaper DAW. Reaper has some issues
 
 So what this program is intended to do is simply giving a small GUI for adjusting the most common settings aswell as having the option suspending pipewire to allow Reaper to be run with ALSA.
 
-# Dependencies (hopefully accurate!)
+## Dependencies
 
-python3<br>
-python3-gi<br>
-pipewire<br>
+Should work without installing anything on most common distrobutions since it really only needs pipewire and python3
 
+### List of tested on their latest versions 2023:
+* Ubuntu
+* Fedora
+* Manjaro (KDE & Gnome spins)
+* Pop_OS!
+
+### If not working right away, try:
+
+Ubuntu-based systems:
+```
+sudo apt install pipewire python3
+```
+Fedora-based systems:
+```
+sudo dnf install pipewire python3
+```
+Arch-based systems... Well you guys will figure it out but maybe something like:
+```
+pacman -SdajHsfiJoewW798rnewhojkiofw! pipewire python3
+```
+
+## Potential future improvements
+
+* Add 2046 buffer size option
+* Put buffer size options in drop-down menu instead of radio buttons
+* Make radio buttons positions reflect current settings when starting program, rather than my preferred settings being pre-selected
+* When reactivating pipewire after having it suspending the program freezes until pipewire service is running again. On slower systems this time will be long enough to flag the program as unrespnsive and give option to wait or force quit. Instead there should probably be some kind of loading message to let the user know it might take some time.
+
+## Final words
+
+Note that there are probably much better ways of solving the problems I tried to solve with this program and there might even be pre-existing solutions aswell but this was specifically made to work for me and my workflow and be a easy enough project to give a gateway into some programming.
