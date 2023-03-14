@@ -2,7 +2,7 @@ import gi
 import os
 
 gi.require_version("Gtk", "3.0") 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 
 class Control:
     """Control class for business logic."""
@@ -91,6 +91,10 @@ class ControlWindow:
     def __init__(self, control):
         self.control = control
         self.control.control_window = self
+
+        settings = Gtk.Settings.get_default()
+        settings.set_property("gtk-theme-name", Gio.Settings.new("org.gnome.desktop.interface").get_string("gtk-theme"))
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file("pipewire-control.glade")
         self.builder.connect_signals(self)
