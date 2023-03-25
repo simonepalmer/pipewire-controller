@@ -44,29 +44,27 @@ class Control:
     """Check the current status and settings of pipewire and set the labels accordingly"""
 
     def get_current_settings(self):
-        # Check if pipewire is active, will return '' if it's not
         if not os.popen('pw-metadata -n settings').read() == '':
             status_str = 'Active (Running)'
             status_word = 'start'
             current_settings = os.popen('pw-metadata -n settings').read()
             settings_list = current_settings.split("'")
 
-            # Check forced settings
-            buffer_i = settings_list.index('clock.force-quantum')
-            buffer_str = f"{settings_list[buffer_i+2]} samples"
-            samples_i = settings_list.index('clock.force-rate')
-            samples_str = f"{settings_list[samples_i+2]} kHz"
+            # Get buffer setting (default if not forced)
+            buffer_temp = settings_list.index('clock.force-quantum')
+            if settings_list[buffer_temp+2] == str(0):
+                buffer_temp = settings_list.index('clock.quantum')
 
-            # If no settings are forced, give default settings
-            if buffer_str == '0 samples':
-                buffer_i = settings_list.index('clock.quantum')
-                buffer_str = f"{settings_list[buffer_i+2]} samples"
-            if samples_str == '0 kHz':
-                samples_i = settings_list.index('clock.rate')
-                samples_str = f"{settings_list[samples_i+2]} kHz"
+            buffer_str = f"{settings_list[buffer_temp+2]} samples"
+            buffer_int = settings_list[buffer_temp+2]
 
-            buffer_int = settings_list[buffer_i+2]
-            samples_int = settings_list[samples_i+2]
+            # Get samples setting (default if not forced)
+            samples_temp = settings_list.index('clock.force-rate')
+            if settings_list[samples_temp+2] == str(0): 
+                samples_temp = settings_list.index('clock.rate')
+
+            samples_str = f"{settings_list[samples_temp+2]} kHz"
+            samples_int = settings_list[samples_temp+2]
 
         else:
             status_str = 'Suspended'
@@ -77,6 +75,7 @@ class Control:
             samples_int = 'Not set'
 
         return status_str, buffer_str, samples_str, status_word, buffer_int, samples_int
+        # Index    [0]         [1]         [2]         [3]         [4]          [5]
 
     def show_current_settings(self):
         current_settings = self.get_current_settings()
@@ -91,6 +90,7 @@ class ControlWindow:
     def __init__(self, control):
         self.control = control
         self.control.control_window = self
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file("pipewire-control.glade")
         self.builder.connect_signals(self)
