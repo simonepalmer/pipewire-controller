@@ -2,7 +2,7 @@ import gi
 import os
 
 gi.require_version("Gtk", "3.0") 
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk
 
 class Control:
     """Control class for business logic."""
