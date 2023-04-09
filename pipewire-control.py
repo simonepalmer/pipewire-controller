@@ -51,20 +51,20 @@ class Control:
             settings_list = current_settings.split("'")
 
             # Get buffer setting (default if not forced)
-            buffer_temp = settings_list.index('clock.force-quantum')
-            if settings_list[buffer_temp+2] == str(0):
-                buffer_temp = settings_list.index('clock.quantum')
+            buffer_index = settings_list.index('clock.force-quantum')
+            if settings_list[buffer_index+2] == str(0):
+                buffer_index = settings_list.index('clock.quantum')
 
-            buffer_str = f"{settings_list[buffer_temp+2]} samples"
-            buffer_int = settings_list[buffer_temp+2]
+            buffer_int = settings_list[buffer_index+2]
+            buffer_str = f"{buffer_int} samples"
 
             # Get samples setting (default if not forced)
-            samples_temp = settings_list.index('clock.force-rate')
-            if settings_list[samples_temp+2] == str(0): 
-                samples_temp = settings_list.index('clock.rate')
+            samples_index = settings_list.index('clock.force-rate')
+            if settings_list[samples_index+2] == str(0): 
+                samples_index = settings_list.index('clock.rate')
 
-            samples_str = f"{settings_list[samples_temp+2]} kHz"
-            samples_int = settings_list[samples_temp+2]
+            samples_int = settings_list[samples_index+2]
+            samples_str = f"{samples_int} kHz"
 
         else:
             status_str = 'Suspended'
