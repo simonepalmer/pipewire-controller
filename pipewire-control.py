@@ -13,25 +13,13 @@ class Control:
         self.status_command = status_command
         self.control_window = None
 
-    """If Pipewire is installed, apply settings, else show error"""
 
     def apply_settings(self):
+
         # Check if pipewire is installed
         if os.popen('which pipewire').read() == '/usr/bin/pipewire\n':
             try:
-                current_settings = self.get_current_settings()
-                
-                # Starting or stopping pipewire based on radio buttons and current status
-                if str(self.status_command) != current_settings[3]:
-                    os.system(f'systemctl --user {self.status_command} pipewire.socket')
-                    os.system(f'systemctl --user {self.status_command} pipewire.service')
-
-                # Force buffer size and sample rate to selected values, if not already
-                if str(self.buffer) != str(current_settings[4]):
-                    os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
-                if str(self.samples) != str(current_settings[5]):
-                    os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
-
+                self.set_current_settings()
                 self.show_current_settings()
 
             except Exception as error:
@@ -41,47 +29,63 @@ class Control:
             message = "Pipewire can't be found, use the command: 'which pipewire' to see if it is installed"
             self.control_window.on_error(message, "If not, install Pipewire and try again")
 
-    """Check the current status and settings of pipewire and set the labels accordingly"""
 
-    def get_current_settings(self):
-        if not os.popen('pw-metadata -n settings').read() == '':
-            status_str = 'Active (Running)'
-            status_word = 'start'
-            current_settings = os.popen('pw-metadata -n settings').read()
-            settings_list = current_settings.split("'")
+    def set_current_settings(self):
+        current_settings = self.get_current_settings()
 
-            # Get buffer setting (default if not forced)
-            buffer_index = settings_list.index('clock.force-quantum')
-            if settings_list[buffer_index+2] == str(0):
-                buffer_index = settings_list.index('clock.quantum')
+        # Change settings if different from current values
+        if str(self.status_command) != current_settings['status_word']:
+            os.system(f'systemctl --user {self.status_command} pipewire.socket')
+            os.system(f'systemctl --user {self.status_command} pipewire.service')
 
-            buffer_int = settings_list[buffer_index+2]
-            buffer_str = f"{buffer_int} samples"
+        if str(self.buffer) != str(current_settings['buffer_int']):
+            os.system(f'pw-metadata -n settings 0 clock.force-quantum {self.buffer}')
 
-            # Get samples setting (default if not forced)
-            samples_index = settings_list.index('clock.force-rate')
-            if settings_list[samples_index+2] == str(0): 
-                samples_index = settings_list.index('clock.rate')
+        if str(self.samples) != str(current_settings['samples_int']):
+            os.system(f'pw-metadata -n settings 0 clock.force-rate {self.samples}')
 
-            samples_int = settings_list[samples_index+2]
-            samples_str = f"{samples_int} kHz"
-
-        else:
-            status_str = 'Suspended'
-            buffer_str = 'Not active'
-            samples_str = 'Not active'
-            status_word = 'stop'
-            buffer_int = 'Not set'
-            samples_int = 'Not set'
-
-        return status_str, buffer_str, samples_str, status_word, buffer_int, samples_int
-        # Index    [0]         [1]         [2]         [3]         [4]          [5]
 
     def show_current_settings(self):
         current_settings = self.get_current_settings()
-        self.control_window.label_status_settings.set_text(f"Status: {current_settings[0]}")
-        self.control_window.label_buffer_settings.set_text(f"Buffer size: {current_settings[1]}")
-        self.control_window.label_sample_settings.set_text(f"Sample rate: {current_settings[2]}")
+
+        # Settings current settings to the GUI labels
+        self.control_window.label_status_settings.set_text(f"Status: {current_settings['status']}")
+        self.control_window.label_buffer_settings.set_text(f"Buffer size: {current_settings['buffer']}")
+        self.control_window.label_sample_settings.set_text(f"Sample rate: {current_settings['samples']}")
+
+
+    def get_current_settings(self):
+        if not os.popen('pw-metadata -n settings').read() == '':
+            current_settings = os.popen('pw-metadata -n settings').read()
+            settings_list = current_settings.split("'")
+            
+            buffer_index = settings_list.index('clock.force-quantum')
+            if settings_list[buffer_index+2] == str(0):
+                buffer_index = settings_list.index('clock.quantum')
+            buffer = f"{settings_list[buffer_index+2]} samples"
+
+            samples_index = settings_list.index('clock.force-rate')
+            if settings_list[samples_index+2] == str(0): 
+                samples_index = settings_list.index('clock.rate')
+            samples = f"{settings_list[samples_index+2]} kHz"
+
+            return {
+                "status": "Active (Running)",
+                "buffer": buffer,
+                "samples": samples,
+                "status_word": "start",
+                "buffer_int": settings_list[buffer_index+2],
+                "samples_int": settings_list[samples_index+2]
+            }
+        else:
+            return {
+                "status": "Suspended",
+                "buffer": "Not active",
+                "samples": "Not active",
+                "status_word": "stop",
+                "buffer_int": "Not set",
+                "samples_int": "Not set"
+            }
 
 
 class ControlWindow:
