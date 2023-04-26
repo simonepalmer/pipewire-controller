@@ -49,9 +49,9 @@ class Control:
         current_settings = self.get_current_settings()
 
         # Settings current settings to the GUI labels
-        self.control_window.label_status_settings.set_text(f"Status: {current_settings['status']}")
-        self.control_window.label_buffer_settings.set_text(f"Buffer size: {current_settings['buffer']}")
-        self.control_window.label_sample_settings.set_text(f"Sample rate: {current_settings['samples']}")
+        self.control_window.label_status_settings.set_text(f"{current_settings['status']}")
+        self.control_window.label_buffer_settings.set_text(f"{current_settings['buffer']}")
+        self.control_window.label_sample_settings.set_text(f"{current_settings['samples']}")
 
 
     def get_current_settings(self):
@@ -116,9 +116,9 @@ class ControlWindow:
         self.radio96 = self.builder.get_object('radio96')
 
         # Define and set labels so they can show the settings
-        self.label_status_settings = self.builder.get_object("label_status_settings")
-        self.label_buffer_settings = self.builder.get_object("label_buffer_settings")
-        self.label_sample_settings = self.builder.get_object("label_sample_settings")
+        self.label_status_settings = self.builder.get_object("current_status_display")
+        self.label_buffer_settings = self.builder.get_object("current_buffer_display")
+        self.label_sample_settings = self.builder.get_object("current_sample_display")
 
         self.control.show_current_settings()
 
